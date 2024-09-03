@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>True North</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #compass {
+            width: 300px;
+            height: 300px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+        }
+        #compass-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transition: transform 0.1s ease-out;
+        }
+        .tick {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background-color: #333;
+            left: 50%;
+            transform-origin: bottom center;
+        }
+        #north-arrow {
+            position: absolute;
+            width: 4px;
+            height: 140px;
+            background-color: red;
+            left: 50%;
+            top: 10px;
+            transform-origin: bottom center;
+            display: none;
+        }
+        #check-button, #guess-again-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #guess-again-button {
+            display: none;
+            background-color: #2196F3;
+        }
+        #score {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="compass">
+            <div id="compass-face"></div>
+            <div id="north-arrow"></div>
+        </div>
+        <button id="check-button">Check</button>
+        <button id="guess-again-button">Guess Again</button>
+        <div id="score"></div>
+    </div>
+
+    <script>
+        const compassFace = document.getElementById('compass-face');
+        const northArrow = document.getElementById('north-arrow');
+        const checkButton = document.getElementById('check-button');
+        const guessAgainButton = document.getElementById('guess-again-button');
+        const scoreDisplay = document.getElementById('score');
+
+        let currentOrientation = 0;
+        let trueNorth = 0;
+
+        function initCompass() {
+            for (let i = 0; i < 360; i += 3) {
+                const tick = document.createElement('div');
+                tick.className = 'tick';
+                tick.style.transform = `rotate(${i}deg) translateY(-140px)`;
+                compassFace.appendChild(tick);
+            }
+        }
+
+        function handleOrientation(event) {
+            const { alpha } = event;
+            if (alpha !== null) {
+                currentOrientation = alpha;
+                compassFace.style.transform = `rotate(${360 - alpha}deg)`;
+            }
+        }
+
+        function checkGuess() {
+            trueNorth = Math.random() * 360;
+            northArrow.style.transform = `rotate(${trueNorth}deg)`;
+            northArrow.style.display = 'block';
+            
+            const guess = (360 - currentOrientation) % 360;
+            const difference = Math.abs(guess - trueNorth);
+            const score = Math.min(difference, 360 - difference);
+            
+            scoreDisplay.textContent = `Your score: ${Math.round(score)}°`;
+            checkButton.style.display = 'none';
+            guessAgainButton.style.display = 'block';
+        }
+
+        function resetGame() {
+            northArrow.style.display = 'none';
+            scoreDisplay.textContent = '';
+            checkButton.style.display = 'block';
+            guessAgainButton.style.display = 'none';
+        }
+
+        initCompass();
+        window.addEventListener('deviceorientation', handleOrientation);
+        checkButton.addEventListener('click', checkGuess);
+        guessAgainButton.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
