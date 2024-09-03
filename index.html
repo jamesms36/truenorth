@@ -27,23 +27,30 @@
 <body>
     <div id="heading">--</div>
     <div id="error"></div>
+    <div id="debug"></div>
 
     <script>
         const headingElement = document.getElementById('heading');
         const errorElement = document.getElementById('error');
+        const debugElement = document.getElementById('debug');
 
         function handleOrientation(event) {
+            debugElement.innerHTML = `Raw data: alpha=${event.alpha}, beta=${event.beta}, gamma=${event.gamma}, webkitCompassHeading=${event.webkitCompassHeading}`;
+            
             if (event.webkitCompassHeading) {
                 // For iOS devices
                 updateHeading(event.webkitCompassHeading);
             } else if (event.alpha !== null) {
                 // For Android devices
                 updateHeading(360 - event.alpha);
+            } else {
+                debugElement.innerHTML += '<br>No valid orientation data received.';
             }
         }
 
         function updateHeading(heading) {
             headingElement.textContent = Math.round(heading) + '°';
+            debugElement.innerHTML += `<br>Calculated heading: ${heading}°`;
         }
 
         if ('DeviceOrientationEvent' in window) {
