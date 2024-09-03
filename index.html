@@ -70,66 +70,64 @@
 </head>
 <body>
     <div id="game-container">
-        <div id="compass">
-            <div id="compass-face"></div>
-            <div id="north-arrow"></div>
-        </div>
-        <button id="check-button">Check</button>
-        <button id="guess-again-button">Guess Again</button>
-        <div id="score"></div>
+        <!-- ... existing elements ... -->
+        <div id="debug"></div>
     </div>
 
     <script>
-        const compassFace = document.getElementById('compass-face');
-        const northArrow = document.getElementById('north-arrow');
-        const checkButton = document.getElementById('check-button');
-        const guessAgainButton = document.getElementById('guess-again-button');
-        const scoreDisplay = document.getElementById('score');
+        // ... existing variables ...
+        const debugDisplay = document.getElementById('debug');
 
         let currentOrientation = 0;
         let trueNorth = 0;
+        let hasPermission = false;
 
-        function initCompass() {
-            for (let i = 0; i < 360; i += 3) {
-                const tick = document.createElement('div');
-                tick.className = 'tick';
-                tick.style.transform = `rotate(${i}deg) translateY(-140px)`;
-                compassFace.appendChild(tick);
+        // ... existing initCompass function ...
+
+        function requestOrientationPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            hasPermission = true;
+                            window.addEventListener('deviceorientation', handleOrientation);
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                hasPermission = true;
+                window.addEventListener('deviceorientation', handleOrientation);
             }
         }
 
         function handleOrientation(event) {
-            const { alpha } = event;
-            if (alpha !== null) {
-                currentOrientation = alpha;
-                compassFace.style.transform = `rotate(${360 - alpha}deg)`;
+            let heading;
+            if (event.webkitCompassHeading) {
+                // iOS devices
+                heading = event.webkitCompassHeading;
+            } else if (event.alpha !== null) {
+                // Android devices
+                heading = 360 - event.alpha;
+            } else {
+                debugDisplay.textContent = 'Orientation data not available';
+                return;
             }
+
+            currentOrientation = heading;
+            compassFace.style.transform = `rotate(${heading}deg)`;
+            debugDisplay.textContent = `Heading: ${Math.round(heading)}°`;
         }
 
-        function checkGuess() {
-            trueNorth = Math.random() * 360;
-            northArrow.style.transform = `rotate(${trueNorth}deg)`;
-            northArrow.style.display = 'block';
-            
-            const guess = (360 - currentOrientation) % 360;
-            const difference = Math.abs(guess - trueNorth);
-            const score = Math.min(difference, 360 - difference);
-            
-            scoreDisplay.textContent = `Your score: ${Math.round(score)}°`;
-            checkButton.style.display = 'none';
-            guessAgainButton.style.display = 'block';
-        }
-
-        function resetGame() {
-            northArrow.style.display = 'none';
-            scoreDisplay.textContent = '';
-            checkButton.style.display = 'block';
-            guessAgainButton.style.display = 'none';
-        }
+        // ... existing checkGuess and resetGame functions ...
 
         initCompass();
-        window.addEventListener('deviceorientation', handleOrientation);
-        checkButton.addEventListener('click', checkGuess);
+        checkButton.addEventListener('click', () => {
+            if (!hasPermission) {
+                requestOrientationPermission();
+            } else {
+                checkGuess();
+            }
+        });
         guessAgainButton.addEventListener('click', resetGame);
     </script>
 </body>
