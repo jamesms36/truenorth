@@ -70,64 +70,86 @@
 </head>
 <body>
     <div id="game-container">
-        <!-- ... existing elements ... -->
+        <div id="compass">
+            <div id="compass-face"></div>
+            <div id="north-arrow"></div>
+        </div>
+        <button id="check-button">Check</button>
+        <button id="guess-again-button">Guess Again</button>
+        <div id="score"></div>
         <div id="debug"></div>
     </div>
 
     <script>
-        // ... existing variables ...
+        const compassFace = document.getElementById('compass-face');
+        const northArrow = document.getElementById('north-arrow');
+        const checkButton = document.getElementById('check-button');
+        const guessAgainButton = document.getElementById('guess-again-button');
+        const scoreDisplay = document.getElementById('score');
         const debugDisplay = document.getElementById('debug');
 
         let currentOrientation = 0;
         let trueNorth = 0;
         let hasPermission = false;
 
-        // ... existing initCompass function ...
-
-        function requestOrientationPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            hasPermission = true;
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        }
-                    })
-                    .catch(console.error);
-            } else {
-                hasPermission = true;
-                window.addEventListener('deviceorientation', handleOrientation);
+        function initCompass() {
+            try {
+                if (window.DeviceOrientationEvent) {
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    debugDisplay.textContent = 'Device orientation supported';
+                } else {
+                    debugDisplay.textContent = 'Device orientation not supported';
+                }
+            } catch (error) {
+                debugDisplay.textContent = 'Error initializing compass: ' + error.message;
             }
         }
 
         function handleOrientation(event) {
-            let heading;
-            if (event.webkitCompassHeading) {
-                // iOS devices
-                heading = event.webkitCompassHeading;
-            } else if (event.alpha !== null) {
-                // Android devices
-                heading = 360 - event.alpha;
-            } else {
-                debugDisplay.textContent = 'Orientation data not available';
-                return;
-            }
+            try {
+                let heading;
+                if (event.webkitCompassHeading) {
+                    // iOS devices
+                    heading = event.webkitCompassHeading;
+                } else if (event.alpha !== null) {
+                    // Android devices
+                    heading = 360 - event.alpha;
+                } else {
+                    debugDisplay.textContent = 'Orientation data not available';
+                    return;
+                }
 
-            currentOrientation = heading;
-            compassFace.style.transform = `rotate(${heading}deg)`;
-            debugDisplay.textContent = `Heading: ${Math.round(heading)}°`;
+                currentOrientation = heading;
+                compassFace.style.transform = `rotate(${heading}deg)`;
+                debugDisplay.textContent = `Heading: ${Math.round(heading)}°`;
+            } catch (error) {
+                debugDisplay.textContent = 'Error handling orientation: ' + error.message;
+            }
         }
 
-        // ... existing checkGuess and resetGame functions ...
+        function checkGuess() {
+            trueNorth = Math.random() * 360;
+            northArrow.style.transform = `rotate(${trueNorth}deg)`;
+            northArrow.style.display = 'block';
+            
+            const guess = (360 - currentOrientation) % 360;
+            const difference = Math.abs(guess - trueNorth);
+            const score = Math.min(difference, 360 - difference);
+            
+            scoreDisplay.textContent = `Your score: ${Math.round(score)}°`;
+            checkButton.style.display = 'none';
+            guessAgainButton.style.display = 'block';
+        }
+
+        function resetGame() {
+            northArrow.style.display = 'none';
+            scoreDisplay.textContent = '';
+            checkButton.style.display = 'block';
+            guessAgainButton.style.display = 'none';
+        }
 
         initCompass();
-        checkButton.addEventListener('click', () => {
-            if (!hasPermission) {
-                requestOrientationPermission();
-            } else {
-                checkGuess();
-            }
-        });
+        checkButton.addEventListener('click', checkGuess);
         guessAgainButton.addEventListener('click', resetGame);
     </script>
 </body>
