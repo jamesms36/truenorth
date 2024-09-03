@@ -3,105 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile Compass App</title>
+    <title>Compass Heading</title>
     <style>
         body {
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
         }
-        #compass {
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            position: relative;
+        #heading {
+            font-size: 48px;
+            font-weight: bold;
         }
-        #arrow {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 4px;
-            height: 140px;
-            background-color: red;
-            transform-origin: bottom center;
-        }
-        .tick {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            background-color: black;
-            transform-origin: 0 150px;
-        }
-        .tick.major {
-            height: 15px;
-            width: 3px;
-            margin-top: -15px;
-        }
-        .tick.minor {
-            height: 7px;
-            width: 2px;
-            margin-top: -7px;
-        }
-        #degrees {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
+        #error {
+            color: red;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div id="compass">
-        <div id="arrow"></div>
-        <div id="degrees">0°</div>
-    </div>
+    <div id="heading">--</div>
+    <div id="error"></div>
 
     <script>
-        const arrow = document.getElementById('arrow');
-        const degrees = document.getElementById('degrees');
-        const compass = document.getElementById('compass');
-
-        // Create tick marks
-        for (let i = 0; i < 360; i += 5) {
-            const tick = document.createElement('div');
-            tick.className = i % 30 === 0 ? 'tick major' : 'tick minor';
-            tick.style.transform = `rotate(${i}deg)`;
-            compass.appendChild(tick);
-        }
+        const headingElement = document.getElementById('heading');
+        const errorElement = document.getElementById('error');
 
         function handleOrientation(event) {
-            let heading = event.alpha; // Compass direction
-            if (typeof event.webkitCompassHeading !== "undefined") {
-                heading = event.webkitCompassHeading; // iOS non-standard
+            if (event.webkitCompassHeading) {
+                // For iOS devices
+                updateHeading(event.webkitCompassHeading);
+            } else if (event.alpha !== null) {
+                // For Android devices
+                updateHeading(360 - event.alpha);
             }
-
-            const direction = 360 - heading;
-            arrow.style.transform = `rotate(${direction}deg)`;
-            degrees.textContent = `${Math.round(heading)}°`;
         }
 
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener("deviceorientation", handleOrientation, true);
+        function updateHeading(heading) {
+            headingElement.textContent = Math.round(heading) + '°';
+        }
 
-            // Request permission for iOS 13+ devices
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        if ('DeviceOrientationEvent' in window) {
+            if (DeviceOrientationEvent.requestPermission) {
+                // iOS 13+ requires permission
                 DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
                             window.addEventListener('deviceorientation', handleOrientation);
+                        } else {
+                            errorElement.textContent = 'Permission to access device orientation was denied.';
                         }
                     })
                     .catch(console.error);
+            } else {
+                // Non iOS 13+ devices
+                window.addEventListener('deviceorientation', handleOrientation);
             }
         } else {
-            alert("Sorry, your device doesn't support orientation events");
+            errorElement.textContent = 'Device orientation is not supported by your device or browser.';
         }
     </script>
 </body>
